@@ -1,30 +1,26 @@
 <?php
 /**
- * Main Class of Tsukiyo Framework
+ * Main Class
  *
- * PHP versions 5
+ * PHP versions 5.3
  *
- * @package Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
- * @copyright 2012 Satoshi Nishimura
+ * @copyright 2012-2013 Satoshi Nishimura
  */
 
-require_once(dirname(__FILE__) . '/Orm.php');
-require_once(dirname(__FILE__) . '/Vo.php');
-require_once(dirname(__FILE__) . '/Driver/Factory.php');
+namespace Laiz\Db;
 
 /**
- * Main Class of Tsukiyo Framework
+ * Main Class
  *
- * @package Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
  */
-class Tsukiyo_Db
+class Db
 {
     protected $config = array('dsn' => '',
-                              'autoConfig' => true,
+                              'createConfigEachTime' => true,
                               'configFile' => 'cache/tables.ini',
-                              'voPrefix' => 'Tsukiyo_Vo_');
+                              'voPrefix' => 'Vo_');
 
     /**
      * Set dsn
@@ -39,7 +35,7 @@ class Tsukiyo_Db
      */
     public function setAutoConfig($auto)
     {
-        $this->config['autoConfig'] = $auto;
+        $this->config['createConfigEachTime'] = $auto;
         return $this;
     }
     /**
@@ -72,9 +68,9 @@ class Tsukiyo_Db
 
     public function create($name){
         $driver = $this->getDriver();
-        return new Tsukiyo_Orm($driver, $this->config['configFile'], $name,
-                               $this->config['voPrefix'],
-                               $this->config['autoConfig']);
+        return new Orm($driver, $this->config['configFile'], $name,
+                       $this->config['voPrefix'],
+                       $this->config['createConfigEachTime']);
     }
 
     private function voToDbName($vo){
@@ -93,11 +89,11 @@ class Tsukiyo_Db
         if (is_string($vo) && $ids){
             $orm = $this->create($vo);
             $arg = $ids;
-        }else if ($vo instanceof Tsukiyo_Vo){
+        }else if ($vo instanceof Vo){
             $orm = $this->create($this->voToDbName($vo));
             $arg = $vo;
         }else{
-            throw new Tsukiyo_Exception('Unknown type of argument1');
+            throw new Exception('Unknown type of argument1');
         }
         return $orm->delete($arg);
     }
@@ -113,7 +109,7 @@ class Tsukiyo_Db
 
     public function getDriver(){
         try {
-            $db = Tsukiyo_Driver_Factory::factory($this->config['dsn']);
+            $db = Driver\Factory::factory($this->config['dsn']);
             return $db;
         }catch (PDOException $e){
             // PDO error

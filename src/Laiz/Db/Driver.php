@@ -2,20 +2,22 @@
 /**
  * Database Driver Class File
  *
- * PHP versions 5
+ * PHP versions 5.3
  *
- * @package Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
- * @copyright 2012 Satoshi Nishimura
+ * @copyright 2012-2013 Satoshi Nishimura
  */
+
+namespace Laiz\Db;
+
+use PDO;
 
 /**
  * Database Driver Class
  *
- * @package Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
  */
-abstract class Tsukiyo_Driver
+abstract class Driver
 {
     /** @var PDO  */
     private $conn;

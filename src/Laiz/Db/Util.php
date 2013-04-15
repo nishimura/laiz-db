@@ -2,19 +2,19 @@
 /**
  * Utility to convert name
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
- * @copyright Copyright (c) 2012 Satoshi Nishimura
+ * @copyright Copyright (c) 2012-2013 Satoshi Nishimura
  */
+
+namespace Laiz\Db;
 
 /**
  * Utility to convert name
  *
- * @package Tsukiyo
  * @author  Satoshi Nishimura <nishim314@gmail.com>
- * @copyright Copyright (c) 2012 Satoshi Nishimura
+ * @copyright Copyright (c) 2012-2013 Satoshi Nishimura
  */
-class Tsukiyo_Util
+class Util
 {
     public static function toDbName($voName){
         $dot = strpos($voName, '.');

@@ -2,51 +2,41 @@
 /**
  * Conditions Helper
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
  * @copyright Copyright (c) 2012 Satoshi Nishimura
  */
 
+namespace Laiz\Db;
 
-
-require_once __DIR__ . '/Util.php';
-require_once __DIR__ . '/Where.php';
-
-/**
- * short cut function of sql 'AND'
- *
- * @package Tsukiyo
- */
-function _Tsukiyo_Helper_and(){
-    return new Tsukiyo_WhereTree('and');
-}
-/**
- * short cut function of sql 'OR'
- *
- * @package Tsukiyo
- */
-function _Tsukiyo_Helper_or(){
-    return new Tsukiyo_WhereTree('or');
-}
+use Laiz\Db\Condition\WhereNode;
+use Laiz\Db\Condition\WhereTree;
 
 /**
  * Conditions Helper
  *
  * Make sub expression of sql
  *
- * @package Tsukiyo
  * @author  Satoshi Nishimura <nishim314@gmail.com>
  * @copyright Copyright (c) 2012 Satoshi Nishimura
  */
-class Tsukiyo_Helper
+class Helper
 {
-    const _AND = '_Tsukiyo_Helper_and';
-    const _OR  = '_Tsukiyo_Helper_or';
-    // shortcut: extract(Tsukiyo_Helper::$all);
-    public static $and = self::_AND;
-    public static $or = self::_OR;
-    public static $all = array('and' => self::_AND,
-                               'or'  => self::_OR);
+    const _AND = '_helper_and';
+    const _OR  = '_helper_or';
+    // shortcut: extract(Helper::$all);
+    public static $and = array(__CLASS__, self::_AND);
+    public static $or = array(__CLASS__, self::_OR);
+    public static $all = array('and' => array(__CLASS__, self::_AND),
+                               'or'  => array(__CLASS__, self::_OR));
+
+    public static function _helper_and()
+    {
+        return new WhereTree('and');
+    }
+
+    function _helper_or(){
+        return new WhereTree('or');
+    }
 
     public static function like($where, $left, $right, $not = false){
         $where = self::prepareLike($where, $left, $right);
@@ -59,7 +49,7 @@ class Tsukiyo_Helper
     public static function where($op, $where){
         $ret = null;
         foreach ($where as $k => $v){
-            $w = new Tsukiyo_WhereNode($op, $k, $v);
+            $w = new WhereNode($op, $k, $v);
             if ($ret)
                 $ret = $ret->add($w);
             else
@@ -71,7 +61,7 @@ class Tsukiyo_Helper
         $ret = null;
         $where = (array)$where;
         foreach ($where as $k){
-            $w = new Tsukiyo_WhereNode($op, $k, null, true);
+            $w = new WhereNode($op, $k, null, true);
             if ($ret)
                 $ret = $ret->add($w);
             else

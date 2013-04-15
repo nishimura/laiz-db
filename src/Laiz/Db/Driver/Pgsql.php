@@ -1,23 +1,24 @@
 <?php
 /**
- * DB Driver Class File
+ * PostgreSQL Driver Class File
  *
- * PHP versions 5
+ * PHP versions 5.3
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
- * @copyright 2005-2011 Satoshi Nishimura
+ * @copyright 2005-2013 Satoshi Nishimura
  */
 
-require_once dirname(dirname(__FILE__)) . '/Driver.php';
+namespace Laiz\Db\Driver;
+
+use Laiz\Db\Driver;
+use PDO;
 
 /**
  * PostgreSQL Driver Class.
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
  */
-class Tsukiyo_Driver_Pgsql extends Tsukiyo_Driver
+class Pgsql extends Driver
 {
     const META_TABLES_SQL = "
       select tablename from pg_tables

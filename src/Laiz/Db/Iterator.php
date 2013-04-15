@@ -2,19 +2,19 @@
 /**
  * Iterator for view.
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
- * @copyright Copyright (c) 2012 Satoshi Nishimura
+ * @copyright Copyright (c) 2012-2013 Satoshi Nishimura
  */
+
+namespace Laiz\Db;
 
 /**
  * Iterator for view.
  *
- * @package Tsukiyo
  * @author  Satoshi Nishimura <nishim314@gmail.com>
- * @copyright Copyright (c) 2012 Satoshi Nishimura
+ * @copyright Copyright (c) 2012-2013 Satoshi Nishimura
  */
-class Tsukiyo_Iterator implements Iterator
+class Iterator implements \Iterator
 {
     private $orm;
     private $vo;
@@ -88,7 +88,7 @@ class Tsukiyo_Iterator implements Iterator
     public function valid(){
         $hit = false;
         foreach ($this->vo as $v){
-            if ($v instanceof Tsukiyo_Vo || $v instanceof Tsukiyo_Iterator)
+            if ($v instanceof Vo || $v instanceof Iterator)
                 continue;
             if ($v !== null){
                 $hit = true;

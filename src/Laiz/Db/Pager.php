@@ -2,21 +2,23 @@
 /**
  * Simple Pager
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
  * @copyright Copyright (c) 2012-2013 Satoshi Nishimura
  */
+
+namespace Laiz\Db;
+
+use Zend\Http\PhpEnvironment\Request;
 
 /**
  * Simple Pager
  *
  * Make pager link.
  *
- * @package Tsukiyo
  * @author  Satoshi Nishimura <nishim314@gmail.com>
  * @copyright Copyright (c) 2012-2013 Satoshi Nishimura
  */
-class Tsukiyo_Pager
+class Pager
 {
     // internal parameters
     private $iterator;
@@ -27,7 +29,6 @@ class Tsukiyo_Pager
     private $offset;
     private $count;
     private $pagerLength;
-    private $params = array();
 
     // decoration parameters
     private $htmlFirst = '&lt;&lt;';
@@ -40,11 +41,12 @@ class Tsukiyo_Pager
     private $decorateDisabledSuffix = ' ';
 
     private $renderEndsForce = false;
-    //private $htmlPrev = '&lt;';
-    //private $htmlNext = '&gt;';
+
+    private $uri;
+    private $params;
 
     /**
-     * @param $iterator Tsukiyo_Iterator|proxy of Tsukiyo_Iterator
+     * @param $iterator Laiz\Db\Iterator
      * @param $pageCount Number of Row
      * @param $pagerLength Maximum count of pager links
      * @param $counterName The Name of request parameter for page number.
@@ -76,20 +78,15 @@ class Tsukiyo_Pager
 
         $iterator->limit($this->limit)
             ->offset($this->offset);
-    }
-    public function addParam($name)
-    {
-        $this->params[] = $name;
-        return $this;
-    }
-    public function setParams($names)
-    {
-        if ($names === null)
-            $names = array();
-        else if (!is_array($names) && is_string($names))
-            $names = array($names);
-        $this->params = $names;
-        return $this;
+
+
+        $request = new Request();
+        $this->uri = $request->getUri()
+            ->setScheme(null)
+            ->setHost(null)
+            ->setUserInfo(null)
+            ->setPort(null);
+        $this->params = $this->uri->getQueryAsArray();
     }
     public function setHtmlFirst($htmlFirst){
         $this->htmlFirst = $htmlFirst;
@@ -151,6 +148,57 @@ class Tsukiyo_Pager
             $is[] = $i;
         }
 
+        $ret = '';
+
+        if (!$isFirst || $this->renderEndsForce){
+            if ($isFirst){
+                $ret .= $this->decorateDisabledPrefix;
+                $ret .= "<a>$this->htmlFirst</a>";
+                $ret .= $this->decorateDisabledSuffix;
+            }else{
+                $ret .= $this->decoratePrefix;
+                $ret .= '<a href="'
+                    . $this->getRelativePath(0) . "\">$this->htmlFirst</a>";
+                $ret .= $this->decorateSuffix;
+            }
+        }
+        foreach ($is as $i){
+            $viewCount = $i + 1;
+            if ($i === $this->page)
+                $ret .= $this->decorateCurrentPrefix . "<a>$viewCount</a>"
+                    . $this->decorateCurrentSuffix;
+            else
+                $ret .= $this->decoratePrefix
+                    . '<a href="'
+                    . $this->getRelativePath($i) . "\">$viewCount</a>"
+                    . $this->decorateSuffix;
+        }
+        if (!$isLast || $this->renderEndsForce){
+            if ($isLast){
+                $ret .= $this->decorateDisabledPrefix;
+                $ret .= "<a>$this->htmlLast</a>";
+                $ret .= $this->decorateDisabledSuffix;
+            }else{
+                $ret .= $this->decoratePrefix;
+                $ret .= '<a href="'
+                    . $this->getRelativePath($last) . "\">$this->htmlLast</a>";
+                $ret .= $this->decorateSuffix;
+            }
+        }
+        return $ret;
+
+
+
+
+
+
+
+
+
+
+
+
+
         $self = $_SERVER['SCRIPT_NAME'] . '?';
         foreach ($this->params as $name){
             if (!isset($_GET[$name]) || strlen($_GET[$name]) === 0)
@@ -194,5 +242,12 @@ class Tsukiyo_Pager
             }
         }
         return $ret;
+    }
+
+    private function getRelativePath($counter)
+    {
+        $this->params[$this->counterName] = $counter;
+        $this->uri->setQuery($this->params);
+        return $this->uri->toString();
     }
 }

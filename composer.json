@@ -1,0 +1,18 @@
+{
+  "name": "laiz/laiz-db",
+  "description": "Object relational mapping library",
+  "keywords": ["orm", "database"],
+  "homepage": "https://github.com/nishimura/laiz-db",
+  "license": "MIT",
+  "authors": [{
+    "name": "Satoshi Nishimura",
+    "email": "nishim314@gmail.com"
+  }],
+  "autoload": {
+    "psr-0": { "Laiz\\Db\\": "src/" }
+  },
+  "require": {
+    "php": ">=5.3.3",
+    "zendframework/zend-http": "2.1.*"
+  }
+}

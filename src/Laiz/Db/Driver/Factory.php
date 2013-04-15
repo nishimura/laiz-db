@@ -2,24 +2,29 @@
 /**
  * Db Driver Factory Class File
  *
- * PHP versions 5
+ * PHP versions 5.3
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
- * @copyright 2012 Satoshi Nishimura
+ * @copyright 2012-2013 Satoshi Nishimura
  */
+
+namespace Laiz\Db\Driver;
+
+use Laiz\Db\Exception;
 
 /**
  * Class of creation database driver class.
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
  */
-class Tsukiyo_Driver_Factory
+class Factory
 {
     static private $dbs = array();
     
     static public function factory($dsn){
+        if (strlen(trim($dsn)) === 0)
+            throw new \InvalidArgumentException('Dsn required.');
+
         // If same dsn, return same object.
         if (isset(self::$dbs[$dsn]))
             return self::$dbs[$dsn];
@@ -32,14 +37,14 @@ class Tsukiyo_Driver_Factory
             $driverFile = 'Pgsql.php';
             $driverName = 'Pgsql';
             break;
-        case 'sqlite':
-            $driverFile = 'Sqlite.php';
-            $driverName = 'Sqlite';
-            break;
+        /* case 'sqlite':
+         *     $driverFile = 'Sqlite.php';
+         *     $driverName = 'Sqlite';
+         *     break; */
         }
 
         if (!$driverFile)
-            throw new Tsukiyo_Exception('Database Driver not found.');
+            throw new Exception('Database Driver not found.');
 
         $driverFilePath = dirname(__FILE__) . '/' . $driverFile;
 
@@ -51,5 +56,4 @@ class Tsukiyo_Driver_Factory
         self::$dbs[$dsn] = new $className($dsn);
         return self::$dbs[$dsn];
     }
-
 }

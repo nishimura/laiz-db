@@ -2,26 +2,21 @@
 /**
  * Simple O/R Mapping Library
  *
- * @package   Tsukiyo
  * @author    Satoshi Nishimura <nishim314@gmail.com>
- * @copyright Copyright (c) 2012 Satoshi Nishimura
+ * @copyright Copyright (c) 2012-2013 Satoshi Nishimura
  */
 
-require_once __DIR__ . '/Iterator.php';
-require_once __DIR__ . '/Parser.php';
-require_once __DIR__ . '/Util.php';
-require_once __DIR__ . '/Exception.php';
-require_once __DIR__ . '/Helper.php';
-require_once __DIR__ . '/Where.php';
+namespace Laiz\Db;
+
+use PDO;
 
 /**
  * Simple O/R Mapping Library
  *
- * @package Tsukiyo
  * @author  Satoshi Nishimura <nishim314@gmail.com>
- * @copyright Copyright (c) 2012 Satoshi Nishimura
+ * @copyright Copyright (c) 2012-2013 Satoshi Nishimura
  */
-class Tsukiyo_Orm
+class Orm
 {
     // Config
     private $driver;
@@ -57,10 +52,10 @@ class Tsukiyo_Orm
     {
         $this->driver = $driver;
         $this->voName = $name;
-        $this->dbName = Tsukiyo_Util::toDbName($name);
+        $this->dbName = Util::toDbName($name);
         $this->voPrefix = $prefix;
 
-        $this->voDatum = new Tsukiyo_Orm_VoDatum();
+        $this->voDatum = new Orm_VoDatum();
 
         $this->initTableConfig($file, $createConfig);
 
@@ -72,7 +67,7 @@ class Tsukiyo_Orm
         $this->vo = $this->emptyVo();
         $this->setBindNames($this->vo);
 
-        $this->where = new Tsukiyo_WhereTree('and');
+        $this->where = new Condition\WhereTree('and');
     }
 
     public function emptyVo($name = null){
@@ -80,25 +75,27 @@ class Tsukiyo_Orm
             $name = $this->voName;
 
         $className = $this->voPrefix . $name;
+        $fullName = __NAMESPACE__ . '\\' . $className;
 
-        if (!class_exists($className, false)){
-            $dbName = Tsukiyo_Util::toDbName($name);
+        if (!class_exists($fullName, false)){
+            $dbName = Util::toDbName($name);
             if (!isset(self::$tables[$dbName])){
                 trigger_error("Table $tabneName is not exists.", E_USER_WARNING);
                 return;
             }
 
-            $code = "class $className implements Tsukiyo_Vo{\n";
+            $namespace = __NAMESPACE__;
+            $code = "namespace $namespace;\n";
+            $code .= "class $className implements Vo\n{\n";
             foreach (self::$tables[$dbName]['cols'] as $col => $typ){
-                $propName = Tsukiyo_Util::toVoName($col);
+                $propName = Util::toVoName($col);
                 $code .= "  public \$$propName = null;\n";
             }
             $code .= "}\n";
 
-            require_once dirname(__FILE__) . '/Vo.php';
             eval($code);
         }
-        $vo = new $className();
+        $vo = new $fullName();
 
         return $vo;
     }
@@ -107,11 +104,11 @@ class Tsukiyo_Orm
     public function id($ids){
         $ids = (array)$ids;
         if (count($ids) !== count($this->config['pkeys']))
-            throw new Tsukiyo_Exception('Unmatched id count ' . count($ids)
-                                        . ':' . count($this->config['pkeys']));
+            throw new Exception('Unmatched id count ' . count($ids)
+                                . ':' . count($this->config['pkeys']));
         $pkeys = $this->config['pkeys'];
         foreach ($pkeys as $i => $pkey)
-            $this->where->eq(array($this->voName . '.' . Tsukiyo_Util::toVoName($pkey) =>$ids[$i]));
+            $this->where->eq(array($this->voName . '.' . Util::toVoName($pkey) =>$ids[$i]));
 
         return $this;
     }
@@ -174,7 +171,7 @@ class Tsukiyo_Orm
     public function getInternalWhere(){
         return $this->where;
     }
-    public function sub(Tsukiyo_WhereTree $where){
+    public function sub(Condition\WhereTree $where){
         $this->where->add($where);
         return $this;
     }
@@ -182,9 +179,9 @@ class Tsukiyo_Orm
         $order = (array)$order;
         foreach ($order as $k => $v){
             if (is_numeric($k)){
-                $this->orders[] = Tsukiyo_Util::toDbName($v);
+                $this->orders[] = Util::toDbName($v);
             }else{
-                $colName = Tsukiyo_Util::toDbName($k);
+                $colName = Util::toDbName($k);
                 $this->orders[] = "$colName $v";
             }
         }
@@ -192,13 +189,13 @@ class Tsukiyo_Orm
     }
     public function limit($limit){
         if (!is_numeric($limit) && $limit !== null)
-            throw new Tsukiyo_Exception('limit is not numeric');
+            throw new Exception('limit is not numeric');
         $this->limit = $limit;
         return $this;
     }
     public function offset($offset){
         if (!is_numeric($offset) && $offset !== null)
-            throw new Tsukiyo_Exception('offset is not numeric');
+            throw new Exception('offset is not numeric');
         $this->offset = $offset;
         return $this;
     }
@@ -217,9 +214,9 @@ class Tsukiyo_Orm
             return $vo;
         foreach ($vo as $k => $v){
             $target = null;
-            if ($v instanceof Tsukiyo_Vo)
+            if ($v instanceof Vo)
                 $target = $v;
-            else if ($v instanceof Tsukiyo_Iterator)
+            else if ($v instanceof Iterator)
                 $target = $v->getVo();
             if ($target){
                 $ret = $this->searchJoinVo($target, $name);
@@ -238,17 +235,17 @@ class Tsukiyo_Orm
             $leftVo = $this->vo;
         }
         if (!$this->parseJoin($leftVo, $rightName, false))
-            throw new Tsukiyo_Exception("Unknown join table $name.");
+            throw new Exception("Unknown join table $name.");
 
         $sql = '';
         if ($outer)
             $sql .= ' left outer ';
-        $joinTable = Tsukiyo_Util::toDbName($rightName);
+        $joinTable = Util::toDbName($rightName);
         $sql .= ' join ' . $joinTable;
         $sql .= ' on (';
 
         if ($leftName){
-            $left = Tsukiyo_Util::toDbName($leftName);
+            $left = Util::toDbName($leftName);
         }else{
             $left = array_keys($this->joins);
             array_unshift($left, $this->dbName);
@@ -256,10 +253,10 @@ class Tsukiyo_Orm
 
         $sql .= $this->getJoinOn($left, $joinTable);
         if (is_array($where)){
-            $and = Tsukiyo_Helper::$and;
+            $and = Helper::$and;
             $where = $and()->eq($where);
         }
-        if ($where instanceof Tsukiyo_Where){
+        if ($where instanceof Condition\Where){
             $sql .= ' and ' . $where->getString();
             $params = $where->getParams();
         }else{
@@ -278,7 +275,7 @@ class Tsukiyo_Orm
                 if ($ret)
                     return $ret;
             }
-            throw new Tsukiyo_Exception("Unknown join column by $left and $right.");
+            throw new Exception("Unknown join column by $left and $right.");
         }
         $ret = array();
         foreach (self::$fkeys as $k => $v){
@@ -314,11 +311,11 @@ class Tsukiyo_Orm
         $pkeys = $this->config['pkeys'];
         $count = count($pkeys);
         if ($count > 1)
-            throw new Tsukiyo_Exception('Unsupported save with multiple primary keys. Please use update or insert method.');
+            throw new Exception('Unsupported save with multiple primary keys. Please use update or insert method.');
 
         $hit = 0;
         foreach ($pkeys as $i => $pkey){
-            $voName = Tsukiyo_Util::toVoName($pkey);
+            $voName = Util::toVoName($pkey);
             if (isset($vo->$voName))
                 $hit++;
         }
@@ -329,13 +326,13 @@ class Tsukiyo_Orm
         else if ($hit === $count)
             return $this->update($vo);
         else
-            throw new Tsukiyo_Exception('Undetermined insert or update.');
+            throw new Exception('Undetermined insert or update.');
     }
     private function setIdsByVo($vo){
         $pkeys = $this->config['pkeys'];
         foreach ($pkeys as $i => $pkey){
-            $voName = Tsukiyo_Util::toVoName($pkey);
-            $this->where->eq(array(Tsukiyo_Util::toVoName($pkey)
+            $voName = Util::toVoName($pkey);
+            $this->where->eq(array(Util::toVoName($pkey)
                                    => $vo->$voName));
         }
     }
@@ -349,7 +346,7 @@ class Tsukiyo_Orm
         foreach ($this->config['cols'] as $col => $typ){
             if (in_array($col, $pkeys))
                 continue;
-            $voName = Tsukiyo_Util::toVoName($col);
+            $voName = Util::toVoName($col);
             $cols[] = "$col = ?";
             $params[] = $vo->$voName;
             $types[] = $typ;
@@ -386,7 +383,7 @@ class Tsukiyo_Orm
         $params = array();
         $types = array();
         foreach ($this->config['cols'] as $col => $typ){
-            $voName = Tsukiyo_Util::toVoName($col);
+            $voName = Util::toVoName($col);
             if (!isset($vo->$voName))
                 continue;
             $cols[] = $col;
@@ -395,7 +392,7 @@ class Tsukiyo_Orm
             $types[] = $typ;
         }
         if (count($cols) === 0)
-            throw new Tsukiyo_Exception('All properties are null');
+            throw new Exception('All properties are null');
 
         $sql = "insert into $this->dbName (";
         $sql .= implode(', ', $cols);
@@ -410,14 +407,14 @@ class Tsukiyo_Orm
 
         $ret = $stmt->execute();
         foreach ($this->config['seqs'] as $pkey => $seq){
-            $prop = Tsukiyo_Util::toVoName($pkey);
+            $prop = Util::toVoName($pkey);
             if (!isset($vo->$prop))
                 $vo->$prop = $this->driver->lastInsertId($seq);
         }
         return $ret;
     }
     public function delete($voOrIds = null){
-        if ($voOrIds instanceof Tsukiyo_Vo){
+        if ($voOrIds instanceof Vo){
             $this->setIdsByVo($voOrIds);
         }else if ($voOrIds !== null){
             $this->id($voOrIds);
@@ -463,7 +460,7 @@ class Tsukiyo_Orm
         $clone = clone $vo;
         foreach ($vo as $k => $v){
             unset($clone->$k);
-            if ($v instanceof Tsukiyo_Vo)
+            if ($v instanceof Vo)
                 $v = $this->cloneVo($v);
             $clone->$k = $v;
         }
@@ -472,7 +469,7 @@ class Tsukiyo_Orm
 
     /* ============ Iterator ===================*/
     public function iterator(){
-        $ret = new Tsukiyo_Iterator($this, $this->vo);
+        $ret = new Iterator($this, $this->vo);
         $ret->setCloneVo($this->toCloneVo);
         $this->setupIteratorRelations($ret);
         $ret->setRoot();
@@ -544,18 +541,18 @@ class Tsukiyo_Orm
     }
 
     private function parseJoin($left, $name){
-        if ($left instanceof Tsukiyo_Vo)
+        if ($left instanceof Vo)
             $vo = $left;
-        else if ($left instanceof Tsukiyo_Iterator)
+        else if ($left instanceof Iterator)
             $vo = $left->getVo();
         else
-            throw new Tsukiyo_Exception('BUG', E_USER_ERROR);
+            throw new Exception('BUG', E_USER_ERROR);
 
         foreach (self::$fkeys as $k => $v){
             list($fromTable, $fromCol) = explode('.', $k);
             list($toTable, $toCol) = explode('.', $v);
 
-            $right = Tsukiyo_Util::toDbName($name);
+            $right = Util::toDbName($name);
             $left = $this->voToDbName($vo);
             if ($left === $fromTable && $right === $toTable){
                 $vo->$name = $this->emptyVo($name);
@@ -563,14 +560,14 @@ class Tsukiyo_Orm
                 return true;
             }else if ($right === $fromTable && $left === $toTable){
                 $newVo = $this->emptyVo($name);
-                $vo->$name = new Tsukiyo_Iterator($this, $newVo);
+                $vo->$name = new Iterator($this, $newVo);
                 $vo->$name->setCloneVo($this->toCloneVo);
                 $this->setBindNames($newVo);
                 return true;
             }
         }
         foreach ($vo as $k => $v){
-            if (!($v instanceof Tsukiyo_Vo) && !($v instanceof Tsukiyo_Iterator))
+            if (!($v instanceof Vo) && !($v instanceof Iterator))
                 continue;
             $ret = $this->parseJoin($v, $name);
             if ($ret)
@@ -578,26 +575,26 @@ class Tsukiyo_Orm
         }
     }
     private function setupIteratorRelations($parent, $parentIterator = null){
-        if ($parent instanceof Tsukiyo_Iterator){
+        if ($parent instanceof Iterator){
             $parentIterator = $parent;
             $parentVo = $parent->getVo();
-        }else if ($parent instanceof Tsukiyo_Vo){
+        }else if ($parent instanceof Vo){
             $parentVo = $parent;
         }else{
-            throw new Tsukiyo_Exception('BUG: Unknown object');
+            throw new Exception('BUG: Unknown object');
         }
         $hit = false;
         foreach ($parentVo as $k => $v){
-            if ($parentIterator && ($v instanceof Tsukiyo_Iterator)){
+            if ($parentIterator && ($v instanceof Iterator)){
                 if ($hit)
-                    throw new Tsukiyo_Exception('Unsupported multiple iterator in vo');
+                    throw new Exception('Unsupported multiple iterator in vo');
                 $hit = true;
                 $parentIterator->setChildIterator($v);
                 $pkeys = $this->getPkeyColumns($this->voToDbName($parentVo));
                 $v->setParent($parentVo, $pkeys);
             }
-            if ($v instanceof Tsukiyo_Iterator ||
-                $v instanceof Tsukiyo_Vo){
+            if ($v instanceof Iterator ||
+                $v instanceof Vo){
                 $ret = $this->setupIteratorRelations($v, $parentIterator);
                 if ($ret)
                     return true;
@@ -608,7 +605,7 @@ class Tsukiyo_Orm
     private function setBindNames($vo){
         $dbName = $this->voToDbName($vo);
 
-        $voData = new Tsukiyo_Orm_VoData($dbName, $vo);
+        $voData = new Orm_VoData($dbName, $vo);
         $cols = self::$tables[$dbName]['cols'];
         foreach ($cols as $k => $typ){
             $voData->addBindData($k, $typ);
@@ -616,16 +613,17 @@ class Tsukiyo_Orm
         $this->voDatum->addVoData($voData);
     }
 
-    private function voToDbName(Tsukiyo_Vo $vo){
-        $voName = str_replace($this->voPrefix, '', get_class($vo));
-        return Tsukiyo_Util::toDbName($voName);
+    private function voToDbName(Vo $vo){
+        $voName = str_replace(__NAMESPACE__ . '\\', '', get_class($vo));
+        $voName = str_replace($this->voPrefix, '', $voName);
+        return Util::toDbName($voName);
     }
 
     private function getPkeyColumns($dbName){
         $pkeys = self::$tables[$dbName]['pkeys'];
         $ret = array();
         foreach ($pkeys as $pkey){
-            $ret[] = Tsukiyo_Util::toVoName($pkey);
+            $ret[] = Util::toVoName($pkey);
         }
         return $ret;
     }
@@ -635,12 +633,12 @@ class Tsukiyo_Orm
             return;
 
         if ($create || !file_exists($configFile))
-            Tsukiyo_Parser::generate($this->driver, $configFile);
+            Parser::generate($this->driver, $configFile);
 
         $data = parse_ini_file($configFile, true);
         $tables = array();
         foreach ($data as $k => $v){
-            if ($k === Tsukiyo_Parser::FKEY_SECTION)
+            if ($k === Parser::FKEY_SECTION)
                 continue;
 
             list($table, $pkeydata) = explode(':', $k, 2);
@@ -660,16 +658,16 @@ class Tsukiyo_Orm
                                     'cols' => $v);
         }
         self::$tables = $tables;
-        self::$fkeys = $data[Tsukiyo_Parser::FKEY_SECTION];
+        self::$fkeys = $data[Parser::FKEY_SECTION];
     }
 }
 
-class Tsukiyo_Orm_VoDatum
+class Orm_VoDatum
 {
     private $voData = array();
     public function __construct(){
     }
-    public function addVoData(Tsukiyo_Orm_VoData $d){
+    public function addVoData(Orm_VoData $d){
         $this->voData[] = $d;
     }
     public function getSelect(){
@@ -684,7 +682,7 @@ class Tsukiyo_Orm_VoDatum
             $v->bind($stmt);
     }
 }
-class Tsukiyo_Orm_VoData
+class Orm_VoData
 {
     public $dbName;
     public $bindData = array();
@@ -695,7 +693,7 @@ class Tsukiyo_Orm_VoData
     }
     public function addBindData($colName, $typ){
         $this->bindData[] =
-            new Tsukiyo_Orm_BindData($this->dbName, $colName, $typ, $this->vo);
+            new Orm_BindData($this->dbName, $colName, $typ, $this->vo);
     }
     public function bind($stmt){
         foreach ($this->bindData as $b){
@@ -710,7 +708,7 @@ class Tsukiyo_Orm_VoData
         return $cols;
     }
 }
-class Tsukiyo_Orm_BindData
+class Orm_BindData
 {
     private $dbName;
     private $colName;
@@ -735,7 +733,7 @@ class Tsukiyo_Orm_BindData
         return $this->voProp;
     }
     public function bind($stmt){
-        $propName = Tsukiyo_Util::toVoName($this->colName);
+        $propName = Util::toVoName($this->colName);
         $stmt->bindColumn($this->getAlias(), $this->vo->$propName, $this->typ);
     }
 }
