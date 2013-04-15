@@ -20,7 +20,6 @@ class Orm
 {
     // Config
     private $driver;
-    private $voPrefix;
     private $dbName;
     private $voName;
     private $config;
@@ -48,12 +47,11 @@ class Orm
     // settings
     private $toCloneVo;
 
-    public function __construct($driver, $file, $name, $prefix, $createConfig)
+    public function __construct($driver, $file, $name, $createConfig)
     {
         $this->driver = $driver;
         $this->voName = $name;
         $this->dbName = Util::toDbName($name);
-        $this->voPrefix = $prefix;
 
         $this->voDatum = new Orm_VoDatum();
 
@@ -70,12 +68,17 @@ class Orm
         $this->where = new Condition\WhereTree('and');
     }
 
+    private function getVoNamespace()
+    {
+        return __NAMESPACE__ . '\\Vo';
+    }
     public function emptyVo($name = null){
         if ($name === null)
             $name = $this->voName;
 
-        $className = $this->voPrefix . $name;
-        $fullName = __NAMESPACE__ . '\\' . $className;
+        $className = $name;
+        $namespace = $this->getVoNamespace();
+        $fullName = $this->getVoNamespace() . '\\' . $className;
 
         if (!class_exists($fullName, false)){
             $dbName = Util::toDbName($name);
@@ -84,9 +87,8 @@ class Orm
                 return;
             }
 
-            $namespace = __NAMESPACE__;
             $code = "namespace $namespace;\n";
-            $code .= "class $className implements Vo\n{\n";
+            $code .= "class $className implements \Laiz\Db\Vo\n{\n";
             foreach (self::$tables[$dbName]['cols'] as $col => $typ){
                 $propName = Util::toVoName($col);
                 $code .= "  public \$$propName = null;\n";
@@ -209,7 +211,7 @@ class Orm
     }
 
     private function searchJoinVo($vo, $name){
-        $voName = str_replace($this->voPrefix, '', get_class($vo));
+        $voName = get_class($vo);
         if ($voName === $name)
             return $vo;
         foreach ($vo as $k => $v){
@@ -614,8 +616,8 @@ class Orm
     }
 
     private function voToDbName(Vo $vo){
-        $voName = str_replace(__NAMESPACE__ . '\\', '', get_class($vo));
-        $voName = str_replace($this->voPrefix, '', $voName);
+        $voName = str_replace($this->getVoNamespace() . '\\', '',
+                              get_class($vo));
         return Util::toDbName($voName);
     }
 

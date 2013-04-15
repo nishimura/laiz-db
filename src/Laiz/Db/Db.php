@@ -19,8 +19,7 @@ class Db
 {
     protected $config = array('dsn' => '',
                               'createConfigEachTime' => true,
-                              'configFile' => 'cache/tables.ini',
-                              'voPrefix' => 'Vo_');
+                              'configFile' => 'cache/tables.ini');
 
     /**
      * Set dsn
@@ -46,10 +45,6 @@ class Db
         $this->config['configFile'] = $path;
         return $this;
     }
-    public function setVoPrefix($prefix){
-        $this->config['voPrefix'] = $prefix;
-        return $this;
-    }
 
     public function generateVo($name){
         return $this->create($name)->emptyVo();
@@ -60,8 +55,10 @@ class Db
     }
 
     public function autoload($className){
-        if (preg_match('/^' . $this->config['voPrefix'] . '/', $className)){
-            $name = str_replace($this->config['voPrefix'], '', $className);
+        $prefix = __NAMESPACE__ . '\Vo\\';
+        $pattern = preg_quote($prefix, '/');
+        if (preg_match('/^' . $pattern . '/', $className)){
+            $name = str_replace($prefix, '', $className);
             $this->generateVo($name);
         }
     }
@@ -69,12 +66,11 @@ class Db
     public function create($name){
         $driver = $this->getDriver();
         return new Orm($driver, $this->config['configFile'], $name,
-                       $this->config['voPrefix'],
                        $this->config['createConfigEachTime']);
     }
 
     private function voToDbName($vo){
-        return str_replace($this->config['voPrefix'], '', get_class($vo));
+        return get_class($vo);
     }
     public function save($vo){
         return $this->create($this->voToDbName($vo))->save($vo);
