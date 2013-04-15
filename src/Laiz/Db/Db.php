@@ -69,8 +69,14 @@ class Db
                        $this->config['createConfigEachTime']);
     }
 
+    public function createByVo($vo)
+    {
+        return $this->create($this->voToDbName($vo));
+    }
+
     private function voToDbName($vo){
-        return get_class($vo);
+        $prefix = __NAMESPACE__ . '\Vo\\';
+        return str_replace($prefix, '', get_class($vo));
     }
     public function save($vo){
         return $this->create($this->voToDbName($vo))->save($vo);
@@ -86,7 +92,7 @@ class Db
             $orm = $this->create($vo);
             $arg = $ids;
         }else if ($vo instanceof Vo){
-            $orm = $this->create($this->voToDbName($vo));
+            $orm = $this->createByVo($vo);
             $arg = $vo;
         }else{
             throw new Exception('Unknown type of argument1');

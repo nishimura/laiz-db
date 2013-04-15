@@ -621,7 +621,9 @@ class Orm
         return Util::toDbName($voName);
     }
 
-    private function getPkeyColumns($dbName){
+    public function getPkeyColumns($dbName = null){
+        if ($dbName === null)
+            $dbName = $this->dbName;
         $pkeys = self::$tables[$dbName]['pkeys'];
         $ret = array();
         foreach ($pkeys as $pkey){
