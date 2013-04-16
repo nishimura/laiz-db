@@ -149,7 +149,7 @@ function run($version){
     $pdo->exec("UPDATE schema_info SET version = $version");
     $pdo->commit();
 
-    $tablesFile = 'compiled/tables.ini';
+    $tablesFile = 'cache/tables.ini';
     if (file_exists($tablesFile))
         unlink($tablesFile);
 
