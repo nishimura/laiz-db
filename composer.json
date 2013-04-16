@@ -14,5 +14,6 @@
   "require": {
     "php": ">=5.3.3",
     "zendframework/zend-http": "2.1.*"
-  }
+  },
+  "bin": ["bin/migration.php"]
 }
