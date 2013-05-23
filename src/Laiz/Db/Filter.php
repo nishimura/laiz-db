@@ -8,6 +8,9 @@
 
 namespace Laiz\Db;
 
+use IteratorIterator;
+use Traversable;
+
 /**
  * Utility of Iterator
  *
