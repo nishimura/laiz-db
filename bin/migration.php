@@ -19,8 +19,11 @@ interface Migrate
 }
 
 function getPdo(){
-    $dbConfig = parse_ini_file('config/di.ini', true);
-    $dsn = $dbConfig['Laiz\Db\Db']['methods.setDsn.dsn'];
+    $dsn = getenv('PDO_DSN');
+    if (!$dsn){
+        $dbConfig = parse_ini_file('config/di.ini', true);
+        $dsn = $dbConfig['Laiz\Db\Db']['methods.setDsn.dsn'];
+    }
 
     $pdo = new PDO($dsn);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
