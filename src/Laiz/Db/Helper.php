@@ -21,20 +21,12 @@ use Laiz\Db\Condition\WhereTree;
  */
 class Helper
 {
-    const _AND = '_helper_and';
-    const _OR  = '_helper_or';
-    // shortcut: extract(Helper::$all);
-    public static $and = array(__CLASS__, self::_AND);
-    public static $or = array(__CLASS__, self::_OR);
-    public static $all = array('and' => array(__CLASS__, self::_AND),
-                               'or'  => array(__CLASS__, self::_OR));
-
     public static function _helper_and()
     {
         return new WhereTree('and');
     }
 
-    function _helper_or(){
+    public static function _helper_or(){
         return new WhereTree('or');
     }
 
