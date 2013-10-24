@@ -470,11 +470,15 @@ class Orm
     }
 
     /* ============ Iterator ===================*/
-    public function iterator(){
+    public function iterator($filter = null){
         $ret = new Iterator($this, $this->vo);
         $ret->setCloneVo($this->toCloneVo);
         $this->setupIteratorRelations($ret);
         $ret->setRoot();
+
+        if ($filter != null){
+            $ret = new Filter($ret, $filter);
+        }
         return $ret;
     }
     public function count(){
