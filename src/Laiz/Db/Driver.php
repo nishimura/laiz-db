@@ -109,7 +109,23 @@ abstract class Driver
                 $p = array($p);
             }
 
-            $stmt->execute($p);
+            foreach($p as $k => $v){
+                switch (true){
+                case is_bool($v):
+                    $typ = PDO::PARAM_BOOL;
+                    break;
+                case is_int($v):
+                    $typ = PDO::PARAM_INT;
+                    break;
+                case is_null($v):
+                    $typ = PDO::PARAM_NULL;
+                    break;
+                default:
+                    $typ = PDO::PARAM_STR;
+                }
+                $stmt->bindValue($k + 1, $v, $typ);
+            }
+            $stmt->execute();
 
         }else{
             $stmt = $this->conn->query($sql);
